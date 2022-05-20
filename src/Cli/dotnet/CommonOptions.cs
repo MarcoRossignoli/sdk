@@ -161,7 +161,7 @@ namespace Microsoft.DotNet.Cli
 
         public static readonly Option<string> TestFrameworkOption = new Option<string>("--Framework");
 
-        public static readonly Option<string> TestLoggerOption = new Option<string>("--logger");
+        public static readonly Option<string[]> TestLoggerOption = new Option<string[]>("--logger") { Arity = ArgumentArity.ZeroOrMore };
 
         public static bool VerbosityIsDetailedOrDiagnostic(this VerbosityOptions verbosity)
         {
