@@ -167,37 +167,38 @@ namespace Microsoft.DotNet.Cli
             // We are on purpose not capturing the solution, project or directory here. We want to pass it to the
             // MSBuild command so we are letting it flow.
 
-            command.Options.Add(SettingsOption);
-            command.Options.Add(ListTestsOption);
-            command.Options.Add(EnvOption);
-            command.Options.Add(FilterOption);
-            command.Options.Add(AdapterOption);
-            command.Options.Add(LoggerOption);
-            command.Options.Add(OutputOption);
-            command.Options.Add(CommonOptions.ArtifactsPathOption);
-            command.Options.Add(DiagOption);
-            command.Options.Add(NoBuildOption);
-            command.Options.Add(ResultsOption);
-            command.Options.Add(CollectOption);
-            command.Options.Add(BlameOption);
-            command.Options.Add(BlameCrashOption);
-            command.Options.Add(BlameCrashDumpOption);
-            command.Options.Add(BlameCrashAlwaysOption);
-            command.Options.Add(BlameHangOption);
-            command.Options.Add(BlameHangDumpOption);
-            command.Options.Add(BlameHangTimeoutOption);
-            command.Options.Add(NoLogoOption);
-            command.Options.Add(ConfigurationOption);
-            command.Options.Add(FrameworkOption);
-            command.Options.Add(CommonOptions.RuntimeOption.WithHelpDescription(command, LocalizableStrings.RuntimeOptionDescription));
-            command.Options.Add(NoRestoreOption);
-            command.Options.Add(CommonOptions.InteractiveMsBuildForwardOption);
-            command.Options.Add(CommonOptions.VerbosityOption);
-            command.Options.Add(CommonOptions.ArchitectureOption);
-            command.Options.Add(CommonOptions.OperatingSystemOption);
-            command.Options.Add(CommonOptions.DisableBuildServersOption);
+            //command.Options.Add(SettingsOption);
+            //command.Options.Add(ListTestsOption);
+            //command.Options.Add(EnvOption);
+            //command.Options.Add(FilterOption);
+            //command.Options.Add(AdapterOption);
+            //command.Options.Add(LoggerOption);
+            //command.Options.Add(OutputOption);
+            //command.Options.Add(CommonOptions.ArtifactsPathOption);
+            //command.Options.Add(DiagOption);
+            //command.Options.Add(NoBuildOption);
+            //command.Options.Add(ResultsOption);
+            //command.Options.Add(CollectOption);
+            //command.Options.Add(BlameOption);
+            //command.Options.Add(BlameCrashOption);
+            //command.Options.Add(BlameCrashDumpOption);
+            //command.Options.Add(BlameCrashAlwaysOption);
+            //command.Options.Add(BlameHangOption);
+            //command.Options.Add(BlameHangDumpOption);
+            //command.Options.Add(BlameHangTimeoutOption);
+            //command.Options.Add(NoLogoOption);
+            //command.Options.Add(ConfigurationOption);
+            //command.Options.Add(FrameworkOption);
+            //command.Options.Add(CommonOptions.RuntimeOption.WithHelpDescription(command, LocalizableStrings.RuntimeOptionDescription));
+            //command.Options.Add(NoRestoreOption);
+            //command.Options.Add(CommonOptions.InteractiveMsBuildForwardOption);
+            //command.Options.Add(CommonOptions.VerbosityOption);
+            //command.Options.Add(CommonOptions.ArchitectureOption);
+            //command.Options.Add(CommonOptions.OperatingSystemOption);
+            //command.Options.Add(CommonOptions.DisableBuildServersOption);
+            //command.SetAction(TestCommand.Run);
 
-            command.SetAction(TestCommand.Run);
+            command.SetAction(TestingPlatform.Run);
 
             return command;
         }
