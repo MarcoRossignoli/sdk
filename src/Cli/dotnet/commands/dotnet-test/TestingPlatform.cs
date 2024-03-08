@@ -18,12 +18,12 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.Build;
-using Microsoft.DotNet.Tools.MSBuild;
 
 namespace Microsoft.DotNet.Tools.Test
 {
     internal class TestingPlatform
     {
+        private const string MSBuildExeName = "MSBuild.dll";
         private static readonly string _pipeName = Guid.NewGuid().ToString("N");
         private static List<NamedPipeServerStream> s_namedPipeServerStreams = new();
         private static Task _loopTask;
@@ -37,12 +37,15 @@ namespace Microsoft.DotNet.Tools.Test
 
             if (parseResult.UnmatchedTokens.Count(x => x == "--no-build") == 0)
             {
-                BuildCommand buildCommand = new([], false);
+                BuildCommand buildCommand = BuildCommand.FromArgs(["-t:Build;_GetTestsProject", $"-p:GetTestsProjectPipeName={_pipeName}"]);
                 int buildResult = buildCommand.Execute();
             }
+            else
+            {
+                ForwardingAppImplementation mSBuildForwardingApp = new(GetMSBuildExePath(), ["-t:_GetTestsProject", $"-p:GetTestsProjectPipeName={_pipeName}", "-verbosity:q"]);
+                int getTestsProjectResult = mSBuildForwardingApp.Execute();
+            }
 
-            MSBuildForwardingAppWithoutLogging mSBuildForwardingApp = new(["-t:_GetTestsProject", $"-p:GetTestsProjectPipeName={_pipeName}", "-verbosity:q"]);
-            int getTestsProjectResult = mSBuildForwardingApp.Execute();
             // Above line will block till we have all connections and all GetTestsProject msbuild task complete.
             Task.WaitAll([.. s_taskModuleName]);
             Task.WaitAll([.. s_testsRun]);
@@ -95,6 +98,12 @@ namespace Microsoft.DotNet.Tools.Test
 
         private static async Task RunTest(string module)
         {
+            if (!File.Exists(module))
+            {
+                LockedConsoleWrite($"Test module '{module}' not found. Build the test application before or run 'dotnet test'.", ConsoleColor.Yellow);
+                return;
+            }
+
             ProcessStartInfo processStartInfo = new();
             if (module.EndsWith(".dll"))
             {
@@ -107,6 +116,30 @@ namespace Microsoft.DotNet.Tools.Test
             }
 
             await Process.Start(processStartInfo).WaitForExitAsync();
+        }
+
+        private static string GetMSBuildExePath()
+        {
+            return Path.Combine(
+                AppContext.BaseDirectory,
+                MSBuildExeName);
+        }
+
+        private static void LockedConsoleWrite(string message, ConsoleColor consoleColor)
+        {
+            lock (MSBuildExeName)
+            {
+                ConsoleColor currentColor = Console.ForegroundColor;
+                try
+                {
+                    Console.ForegroundColor = consoleColor;
+                    Console.WriteLine(message);
+                }
+                finally
+                {
+                    Console.ForegroundColor = currentColor;
+                }
+            }
         }
     }
 }
