@@ -9,7 +9,9 @@ Copy-Item C:\git\sdk\artifacts\bin\dotnet\Debug\net9.0\dotnet.dll -Destination  
 
 C:\git\localPlayground\garbage\dotnettest>
 dotnet msbuild -t:GetTestsProject /bl
-dotnet --debug test 
+dotnet --debug test
+
+Microsoft.TemplateEngine.Cli.Commands.ICustomHelp <- TODO
 */
 
 using System.Buffers;
