@@ -29,9 +29,11 @@ namespace Microsoft.DotNet.Tools.Test
         private static Task _loopTask;
         private static List<Task> s_taskModuleName = new();
         private static List<Task> s_testsRun = new();
+        private static ParseResult s_parseResult;
 
         public static int Run(ParseResult parseResult)
         {
+            s_parseResult = parseResult;
             CancellationTokenSource cancellationTokenSource = new();
             _loopTask = Task.Run(async () => await WaitConnectionAsync(cancellationTokenSource.Token));
 
@@ -104,15 +106,20 @@ namespace Microsoft.DotNet.Tools.Test
                 return;
             }
 
+            string args = s_parseResult.UnmatchedTokens.Where(x => x != "--no-build").Count() > 0
+                ? s_parseResult.UnmatchedTokens.Where(x => x != "--no-build").Aggregate((a, b) => $"{a} {b}")
+                : string.Empty;
+
             ProcessStartInfo processStartInfo = new();
             if (module.EndsWith(".dll"))
             {
                 processStartInfo.FileName = Environment.ProcessPath;
-                processStartInfo.Arguments = $"exec {module}";
+                processStartInfo.Arguments = $"exec {module} {args}";
             }
             else
             {
                 processStartInfo.FileName = module;
+                processStartInfo.Arguments = args;
             }
 
             await Process.Start(processStartInfo).WaitForExitAsync();
