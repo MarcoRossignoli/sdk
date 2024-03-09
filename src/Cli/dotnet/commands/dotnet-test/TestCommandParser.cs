@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
+using System.Text.Json.Nodes;
+using Microsoft.DotNet.NativeWrapper;
 using Microsoft.DotNet.Tools.Test;
 using LocalizableStrings = Microsoft.DotNet.Tools.Test.LocalizableStrings;
 
@@ -157,7 +159,80 @@ namespace Microsoft.DotNet.Cli
             return Command;
         }
 
+        private static string GetTestingSdkName()
+        {
+            string defaultTestingSdk = "vstest";
+            var resolvedSdk = NETCoreSdkResolverNativeWrapper.ResolveSdk(
+                dotnetExeDirectory: EnvironmentProvider.GetDotnetExeDirectory(),
+                globalJsonStartDirectory: Environment.CurrentDirectory,
+                disallowPrerelease: false);
+
+            JsonNode globalJson = null;
+            if (resolvedSdk.GlobalJsonPath is not null)
+            {
+                globalJson = JsonObject.Parse(File.ReadAllText(resolvedSdk.GlobalJsonPath));
+            }
+            else
+            {
+                string currentDirectory = Environment.CurrentDirectory;
+                string pathRoot = Path.GetPathRoot(currentDirectory);
+                while (true)
+                {
+                    if (currentDirectory == pathRoot)
+                    {
+                        break;
+                    }
+
+                    string globalJsonPath = Path.Combine(currentDirectory, "global.json");
+                    if (File.Exists(globalJsonPath))
+                    {
+                        globalJson = JsonObject.Parse(File.ReadAllText(globalJsonPath));
+                        break;
+                    }
+
+                    currentDirectory = Path.GetDirectoryName(currentDirectory);
+                }
+            }
+
+            if (globalJson is not null)
+            {
+                var testSdkSection = globalJson["test-sdk"];
+                if (testSdkSection is not null && testSdkSection["name"] is not null)
+                {
+                    return testSdkSection["name"].AsValue().GetValue<string>();
+                }
+            }
+
+            return defaultTestingSdk;
+        }
+
         private static CliCommand ConstructCommand()
+        {
+            string testingSdkName = GetTestingSdkName();
+            if (testingSdkName.Equals("vstest", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetVSTestCliCommand();
+            }
+            else if (testingSdkName.Equals("testingplatform", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetTestingPlatformCliCommand();
+            }
+
+            throw new InvalidOperationException($"Testing sdk not supported: '{testingSdkName}'");
+        }
+
+        private static CliCommand GetTestingPlatformCliCommand()
+        {
+            DocumentedCommand command = new("test", DocsLink, LocalizableStrings.AppFullName)
+            {
+                TreatUnmatchedTokensAsErrors = false
+            };
+            command.SetAction(TestingPlatform.Run);
+
+            return command;
+        }
+
+        private static CliCommand GetVSTestCliCommand()
         {
             DocumentedCommand command = new("test", DocsLink, LocalizableStrings.AppFullName)
             {
@@ -167,38 +242,36 @@ namespace Microsoft.DotNet.Cli
             // We are on purpose not capturing the solution, project or directory here. We want to pass it to the
             // MSBuild command so we are letting it flow.
 
-            //command.Options.Add(SettingsOption);
-            //command.Options.Add(ListTestsOption);
-            //command.Options.Add(EnvOption);
-            //command.Options.Add(FilterOption);
-            //command.Options.Add(AdapterOption);
-            //command.Options.Add(LoggerOption);
-            //command.Options.Add(OutputOption);
-            //command.Options.Add(CommonOptions.ArtifactsPathOption);
-            //command.Options.Add(DiagOption);
-            //command.Options.Add(NoBuildOption);
-            //command.Options.Add(ResultsOption);
-            //command.Options.Add(CollectOption);
-            //command.Options.Add(BlameOption);
-            //command.Options.Add(BlameCrashOption);
-            //command.Options.Add(BlameCrashDumpOption);
-            //command.Options.Add(BlameCrashAlwaysOption);
-            //command.Options.Add(BlameHangOption);
-            //command.Options.Add(BlameHangDumpOption);
-            //command.Options.Add(BlameHangTimeoutOption);
-            //command.Options.Add(NoLogoOption);
-            //command.Options.Add(ConfigurationOption);
-            //command.Options.Add(FrameworkOption);
-            //command.Options.Add(CommonOptions.RuntimeOption.WithHelpDescription(command, LocalizableStrings.RuntimeOptionDescription));
-            //command.Options.Add(NoRestoreOption);
-            //command.Options.Add(CommonOptions.InteractiveMsBuildForwardOption);
-            //command.Options.Add(CommonOptions.VerbosityOption);
-            //command.Options.Add(CommonOptions.ArchitectureOption);
-            //command.Options.Add(CommonOptions.OperatingSystemOption);
-            //command.Options.Add(CommonOptions.DisableBuildServersOption);
-            //command.SetAction(TestCommand.Run);
-
-            command.SetAction(TestingPlatform.Run);
+            command.Options.Add(SettingsOption);
+            command.Options.Add(ListTestsOption);
+            command.Options.Add(EnvOption);
+            command.Options.Add(FilterOption);
+            command.Options.Add(AdapterOption);
+            command.Options.Add(LoggerOption);
+            command.Options.Add(OutputOption);
+            command.Options.Add(CommonOptions.ArtifactsPathOption);
+            command.Options.Add(DiagOption);
+            command.Options.Add(NoBuildOption);
+            command.Options.Add(ResultsOption);
+            command.Options.Add(CollectOption);
+            command.Options.Add(BlameOption);
+            command.Options.Add(BlameCrashOption);
+            command.Options.Add(BlameCrashDumpOption);
+            command.Options.Add(BlameCrashAlwaysOption);
+            command.Options.Add(BlameHangOption);
+            command.Options.Add(BlameHangDumpOption);
+            command.Options.Add(BlameHangTimeoutOption);
+            command.Options.Add(NoLogoOption);
+            command.Options.Add(ConfigurationOption);
+            command.Options.Add(FrameworkOption);
+            command.Options.Add(CommonOptions.RuntimeOption.WithHelpDescription(command, LocalizableStrings.RuntimeOptionDescription));
+            command.Options.Add(NoRestoreOption);
+            command.Options.Add(CommonOptions.InteractiveMsBuildForwardOption);
+            command.Options.Add(CommonOptions.VerbosityOption);
+            command.Options.Add(CommonOptions.ArchitectureOption);
+            command.Options.Add(CommonOptions.OperatingSystemOption);
+            command.Options.Add(CommonOptions.DisableBuildServersOption);
+            command.SetAction(TestCommand.Run);
 
             return command;
         }
